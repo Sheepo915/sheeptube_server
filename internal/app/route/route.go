@@ -11,7 +11,7 @@ const (
 
 	videoPrefix = "/video"
 	videos      = "/"
-	video       = "/s"
+	video       = "/:id"
 )
 
 func SetupRouter(r *gin.Engine, h *handler.Handler) {
@@ -19,8 +19,8 @@ func SetupRouter(r *gin.Engine, h *handler.Handler) {
 	{
 		videoGroup := v1.Group(videoPrefix)
 		{
-			videoGroup.GET(videos, h.VideoHandler.GetAllVideo) // /v1/video/
-			videoGroup.GET(video, h.VideoHandler.GetVideo)     // /v1/video/s{query}
+			videoGroup.GET(videos, h.GetAllVideo) // /v1/video/
+			videoGroup.GET(video, h.GetVideo)     // /v1/video/{id}
 		}
 	}
 }

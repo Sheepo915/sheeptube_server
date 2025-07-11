@@ -2,10 +2,7 @@ package config
 
 import (
 	"flag"
-	"log/slog"
 	"os"
-
-	"github.com/jackc/pgx/v5"
 )
 
 type Config struct {
@@ -20,8 +17,4 @@ func (c *Config) ParseFlag() {
 	flag.StringVar(&c.DBPath, "db_path", os.Getenv("DB_PATH"), "Database path")
 
 	flag.Parse()
-}
-
-func InitializeRepository(db pgx.Conn, logger *slog.Logger) {
-
 }

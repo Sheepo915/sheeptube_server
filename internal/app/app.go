@@ -1,18 +1,25 @@
 package app
 
-import "github.com/gin-gonic/gin"
+import (
+	"sheeptube/internal/app/handler"
+	"sheeptube/internal/app/route"
+
+	"github.com/gin-gonic/gin"
+)
 
 type App struct {
-	router *gin.Engine
+	router  *gin.Engine
+	handler *handler.Handler
 }
 
-func NewApp() *App {
-	router := gin.Default()
+func NewApp(handler *handler.Handler) *App {
+	r := gin.Default()
 
-	
+	route.SetupRouter(r, handler)
 
 	return &App{
-		router: router,
+		router:  r,
+		handler: handler,
 	}
 }
 

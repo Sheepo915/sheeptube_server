@@ -3,72 +3,72 @@ package service
 import (
 	"context"
 	video_dto "sheeptube/internal/app/dto/video"
-	"sheeptube/internal/db/repository"
+	"sheeptube/internal/db"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type VideoService struct {
-	videoRepo   repository.VideoRepository
-	channelRepo repository.ChannelRepository
+	queries *db.Queries
 }
 
-func NewVideoService(repo *repository.Repository) *VideoService {
+func NewVideoService(queries *db.Queries) *VideoService {
 	return &VideoService{
-		videoRepo:   repo.VideoRepository,
-		channelRepo: repo.ChannelRepository,
+		queries: queries,
 	}
 }
 
-func (vs *VideoService) GetAllVideo(ctx context.Context) ([]video_dto.GetVideoResponse, error) {
-	videos, err := vs.videoRepo.GetAllVideo(ctx)
+func (vs *VideoService) GetAllVideosForHome(ctx context.Context) ([]video_dto.GetVideoResponse, error) {
+	data, err := vs.queries.GetVideosForHome(ctx, db.GetVideosForHomeParams{
+		Limit:  20,
+		Offset: 0,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	var out []video_dto.GetVideoResponse
-	for _, video := range videos {
-		channel, err := vs.channelRepo.GetChannelNameByID(ctx, video.PostedBy)
-		if err != nil {
-			return nil, err
-		}
-
-		out = append(out, video_dto.GetVideoResponse{
-			VideoID: video.VideoID.String(),
-			Name:    video.Name,
-			Source:  video.Source,
-			Views:   video.Views,
+	var response []video_dto.GetVideoResponse
+	for _, v := range data {
+		response = append(response, video_dto.GetVideoResponse{
+			Name:   v.Name,
+			Source: v.Source,
+			Likes:  int32(v.Likes.Int64),
 			PostedBy: video_dto.PostedByData{
-				ChannelID: channel.ChannelID.String(),
-				Name:      channel.Name,
+				ChannelID: v.ChannelID.String(),
+				Name:      v.Name_2,
+				Pic:       v.Pic.String,
 			},
-			Likes: video.Likes,
+			CreatedAt: v.CreatedAt.Time,
 		})
 	}
 
-	return out, err
+	return response, nil
 }
 
 func (vs *VideoService) GetVideoByID(ctx context.Context, request video_dto.GetViewRequestDTO) (*video_dto.GetVideoResponse, error) {
-	video, err := vs.videoRepo.GetVideoByID(ctx, request.VideoID)
+	id := pgtype.UUID{}
+	if err := id.Scan(request.VideoID); err != nil {
+		return nil, err
+	}
+
+	data, err := vs.queries.GetVideoByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	channel, err := vs.channelRepo.GetChannelNameByID(ctx, video.PostedBy)
-	if err != nil {
-		return nil, err
-	}
-
-	out := video_dto.GetVideoResponse{
-		VideoID: video.VideoID.String(),
-		Name:    video.Name,
-		Source:  video.Source,
-		Views:   video.Views,
+	return &video_dto.GetVideoResponse{
+		Name:   data.Name,
+		Source: data.Source,
+		Likes:  int32(data.Likes.Int64),
+		Views:  int32(data.Views.Int64),
+		Shares: int32(data.Shares.Int64),
 		PostedBy: video_dto.PostedByData{
-			ChannelID: channel.ChannelID.String(),
-			Name:      channel.Name,
+			ChannelID: data.ChannelID.String(),
+			Name:      data.ChannelName,
+			Pic:       data.ChannelPic.String,
 		},
-		Likes: video.Likes,
-	}
-
-	return &out, err
+		Categories: data.Categories,
+		Tag:        data.Tags,
+		Actors:     data.Actors,
+	}, nil
 }

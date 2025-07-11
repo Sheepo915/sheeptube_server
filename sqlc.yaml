@@ -1,0 +1,12 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    schema: "./sql/schema.sql"  
+    queries: "./sql/query.sql"
+    database:
+      uri: "postgres://admin:p@ssw0rd@localhost:5432/sheep_tube"
+    gen:
+      go:
+        package: "db"
+        out: "./internal/db"
+        sql_package: "pgx/v5"
