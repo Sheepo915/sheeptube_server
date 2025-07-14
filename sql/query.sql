@@ -74,6 +74,30 @@ GROUP BY
   c.pic,
   v.created_at;
 
+-- name: NewVideo :exec
+WITH metadata AS (
+  INSERT INTO video_metadata (video_metadata_id) 
+  VALUES (gen_random_uuid())
+  RETURNING id
+)
+INSERT INTO videos (
+  video_id,
+  "name",
+  "description",
+  source,
+  poster,
+  posted_by,
+  video_metadata
+) VALUES (
+  gen_random_uuid(),
+  $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  (SELECT id FROM metadata)
+);
+
 /* Channel */
 /* User */
 /* Model */

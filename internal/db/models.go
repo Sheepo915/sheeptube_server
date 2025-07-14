@@ -86,7 +86,6 @@ type Video struct {
 	Poster        string
 	PostedBy      int64
 	VideoMetadata int64
-	CommentCount  pgtype.Int8
 	CreatedAt     pgtype.Timestamptz
 	UpdatedAt     pgtype.Timestamptz
 }

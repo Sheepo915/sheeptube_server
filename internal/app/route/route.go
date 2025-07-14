@@ -12,6 +12,7 @@ const (
 	videoPrefix = "/video"
 	videos      = "/"
 	video       = "/:id"
+	newVideo    = "/"
 )
 
 func SetupRouter(r *gin.Engine, h *handler.Handler) {
@@ -21,6 +22,7 @@ func SetupRouter(r *gin.Engine, h *handler.Handler) {
 		{
 			videoGroup.GET(videos, h.GetAllVideo) // /v1/video/
 			videoGroup.GET(video, h.GetVideo)     // /v1/video/{id}
+			videoGroup.POST(newVideo, h.NewVideo)
 		}
 	}
 }

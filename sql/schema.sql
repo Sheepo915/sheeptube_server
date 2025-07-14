@@ -38,7 +38,6 @@ CREATE TABLE
     poster TEXT NOT NULL,
     posted_by BIGINT NOT NULL, -- FK to channels or users table
     video_metadata BIGINT NOT NULL, -- FK to metadata table
-    comment_count BIGINT DEFAULT 0,
     created_at TIMESTAMP
     WITH
       TIME ZONE DEFAULT NOW (),

@@ -1,5 +1,5 @@
 package video_dto
 
-type GetViewRequestDTO struct {
+type GetViewRequest struct {
 	VideoID string `from:"id"`
 }

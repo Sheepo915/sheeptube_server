@@ -172,3 +172,47 @@ func (q *Queries) GetVideosForHome(ctx context.Context, arg GetVideosForHomePara
 	}
 	return items, nil
 }
+
+const newVideo = `-- name: NewVideo :exec
+WITH metadata AS (
+  INSERT INTO video_metadata (video_metadata_id) 
+  VALUES (gen_random_uuid())
+  RETURNING id
+)
+INSERT INTO videos (
+  video_id,
+  "name",
+  "description",
+  source,
+  poster,
+  posted_by,
+  video_metadata
+) VALUES (
+  gen_random_uuid(),
+  $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  (SELECT id FROM metadata)
+)
+`
+
+type NewVideoParams struct {
+	Name        string
+	Description pgtype.Text
+	Source      string
+	Poster      string
+	PostedBy    int64
+}
+
+func (q *Queries) NewVideo(ctx context.Context, arg NewVideoParams) error {
+	_, err := q.db.Exec(ctx, newVideo,
+		arg.Name,
+		arg.Description,
+		arg.Source,
+		arg.Poster,
+		arg.PostedBy,
+	)
+	return err
+}

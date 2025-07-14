@@ -2,14 +2,17 @@ package service
 
 import (
 	"context"
+	"fmt"
 	video_dto "sheeptube/internal/app/dto/video"
 	"sheeptube/internal/db"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/minio/minio-go/v7"
 )
 
 type VideoService struct {
-	queries *db.Queries
+	queries     *db.Queries
+	minioClient *minio.Client
 }
 
 func NewVideoService(queries *db.Queries) *VideoService {
@@ -45,10 +48,10 @@ func (vs *VideoService) GetAllVideosForHome(ctx context.Context) ([]video_dto.Ge
 	return response, nil
 }
 
-func (vs *VideoService) GetVideoByID(ctx context.Context, request video_dto.GetViewRequestDTO) (*video_dto.GetVideoResponse, error) {
+func (vs *VideoService) GetVideoByID(ctx context.Context, request video_dto.GetViewRequest) (*video_dto.GetVideoResponse, error) {
 	id := pgtype.UUID{}
 	if err := id.Scan(request.VideoID); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid id: %w", err)
 	}
 
 	data, err := vs.queries.GetVideoByID(ctx, id)
@@ -71,4 +74,40 @@ func (vs *VideoService) GetVideoByID(ctx context.Context, request video_dto.GetV
 		Tag:        data.Tags,
 		Actors:     data.Actors,
 	}, nil
+}
+
+func (vs *VideoService) NewVideo(ctx context.Context, request video_dto.NewVideoRequest) error {
+	desc := pgtype.Text{}
+	if err := desc.Scan(request.Description); err != nil {
+		return fmt.Errorf("invalid description: %w", err)
+	}
+
+	exists, err := vs.minioClient.BucketExists(ctx, "video")
+	if err != nil {
+		return err
+	}
+	if !exists {
+		err := vs.minioClient.MakeBucket(ctx, "video", minio.MakeBucketOptions{})
+		if err != nil {
+			return err
+		}
+	}
+
+	info, err := vs.minioClient.PutObject(ctx, "video", request.Name, &minio.Object{}, minio.DefaultRetryCap.Microseconds())
+	if err != nil {
+		return err
+	}
+
+	err = vs.queries.NewVideo(ctx, db.NewVideoParams{
+		Name:        request.Name,
+		Description: desc,
+		Source:      info.Location,
+		Poster:      request.Poster,
+		PostedBy:    1,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
