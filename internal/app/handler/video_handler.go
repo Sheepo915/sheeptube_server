@@ -57,5 +57,10 @@ func (h *videoHandlerImpl) NewVideo(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 
-	
+	file, err := ctx.FormFile("video")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	h.videoService.NewVideo(ctx, request, file)
 }

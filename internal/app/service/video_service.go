@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"mime/multipart"
 	video_dto "sheeptube/internal/app/dto/video"
 	"sheeptube/internal/db"
 
@@ -76,7 +77,7 @@ func (vs *VideoService) GetVideoByID(ctx context.Context, request video_dto.GetV
 	}, nil
 }
 
-func (vs *VideoService) NewVideo(ctx context.Context, request video_dto.NewVideoRequest) error {
+func (vs *VideoService) NewVideo(ctx context.Context, request video_dto.NewVideoRequest, file *multipart.FileHeader) error {
 	desc := pgtype.Text{}
 	if err := desc.Scan(request.Description); err != nil {
 		return fmt.Errorf("invalid description: %w", err)
@@ -93,7 +94,14 @@ func (vs *VideoService) NewVideo(ctx context.Context, request video_dto.NewVideo
 		}
 	}
 
-	info, err := vs.minioClient.PutObject(ctx, "video", request.Name, &minio.Object{}, minio.DefaultRetryCap.Microseconds())
+	fileData, err := file.Open()
+	if err != nil {
+		return err
+	}
+
+	info, err := vs.minioClient.PutObject(ctx, "video", request.Name, fileData, file.Size, minio.PutObjectOptions{
+		ContentType: file.Header.Get("content-type"),
+	})
 	if err != nil {
 		return err
 	}
