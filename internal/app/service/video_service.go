@@ -6,7 +6,9 @@ import (
 	"mime/multipart"
 	video_dto "sheeptube/internal/app/dto/video"
 	"sheeptube/internal/db"
+	"sheeptube/pkg/video_encoder"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/minio/minio-go/v7"
 )
@@ -14,16 +16,18 @@ import (
 type VideoService struct {
 	queries     *db.Queries
 	minioClient *minio.Client
+	encoder     *video_encoder.Encoder
 }
 
-func NewVideoService(queries *db.Queries) *VideoService {
+// func NewVideoService(queries *db.Queries) *VideoService {
+func NewVideoService() *VideoService {
 	return &VideoService{
-		queries: queries,
+		// queries: queries,
 	}
 }
 
-func (vs *VideoService) GetAllVideosForHome(ctx context.Context) ([]video_dto.GetVideoResponse, error) {
-	data, err := vs.queries.GetVideosForHome(ctx, db.GetVideosForHomeParams{
+func (vs *VideoService) GetAllVideo(ctx context.Context) ([]video_dto.GetVideoResponse, error) {
+	data, err := vs.queries.GetAllVideo(ctx, db.GetVideosForHomeParams{
 		Limit:  20,
 		Offset: 0,
 	})
@@ -77,18 +81,13 @@ func (vs *VideoService) GetVideoByID(ctx context.Context, request video_dto.GetV
 	}, nil
 }
 
-func (vs *VideoService) NewVideo(ctx context.Context, request video_dto.NewVideoRequest, file *multipart.FileHeader) error {
-	desc := pgtype.Text{}
-	if err := desc.Scan(request.Description); err != nil {
-		return fmt.Errorf("invalid description: %w", err)
-	}
-
-	exists, err := vs.minioClient.BucketExists(ctx, "video")
+func (vs *VideoService) NewVideo(ctx context.Context, file *multipart.FileHeader) error {
+	exists, err := vs.minioClient.BucketExists(ctx, "raw")
 	if err != nil {
 		return err
 	}
 	if !exists {
-		err := vs.minioClient.MakeBucket(ctx, "video", minio.MakeBucketOptions{})
+		err := vs.minioClient.MakeBucket(ctx, "raw", minio.MakeBucketOptions{})
 		if err != nil {
 			return err
 		}
@@ -99,19 +98,15 @@ func (vs *VideoService) NewVideo(ctx context.Context, request video_dto.NewVideo
 		return err
 	}
 
-	info, err := vs.minioClient.PutObject(ctx, "video", request.Name, fileData, file.Size, minio.PutObjectOptions{
-		ContentType: file.Header.Get("content-type"),
-	})
+	runID, err := uuid.NewUUID()
 	if err != nil {
 		return err
 	}
 
-	err = vs.queries.NewVideo(ctx, db.NewVideoParams{
-		Name:        request.Name,
-		Description: desc,
-		Source:      info.Location,
-		Poster:      request.Poster,
-		PostedBy:    1,
+	objName := runID.String()
+
+	info, err := vs.minioClient.PutObject(ctx, "raw", objName, fileData, file.Size, minio.PutObjectOptions{
+		ContentType: file.Header.Get("content-type"),
 	})
 	if err != nil {
 		return err

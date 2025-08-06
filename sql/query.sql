@@ -1,5 +1,5 @@
 /* Videos */
--- name: GetVideosForHome :many
+-- name: GetAllVideos :many
 SELECT
   v.video_id,
   v.name,

@@ -55,7 +55,27 @@ CREATE TABLE
     views BIGINT DEFAULT 0,
     shares BIGINT DEFAULT 0,
     comments BIGINT DEFAULT 0,
+    run_id UUID UNIQUE,
+    encoding_status TEXT DEFAULT 'pending',
+    encoding_progress INT DEFAULT 0,
+    error_message TEXT,
     posted_at TIMESTAMP
+    WITH
+      TIME ZONE DEFAULT NOW (),
+      updated_at TIMESTAMP
+    WITH
+      TIME ZONE DEFAULT NOW ()
+  );
+
+CREATE TABLE
+  video_resolutions (
+    id BIGSERIAL PRIMARY KEY,
+    video_metadata_id BIGSERIAL NOT NULL REFERENCES video_metadata (id) ON DELETE CASCADE,
+    resolution TEXT NOT NULL,
+    "status" TEXT DEFAULT 'pending',
+    bitrate TEXT,
+    "size" BIGINT,
+    created_at TIMESTAMP
     WITH
       TIME ZONE DEFAULT NOW (),
       updated_at TIMESTAMP

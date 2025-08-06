@@ -3,12 +3,15 @@ package config
 import (
 	"flag"
 	"os"
+	"sheeptube/internal/minio"
 )
 
 type Config struct {
 	Port   string
 	Env    string
 	DBPath string
+
+	*minio.MinioConfig
 }
 
 func (c *Config) ParseFlag() {

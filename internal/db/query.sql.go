@@ -143,7 +143,7 @@ type GetVideosForHomeRow struct {
 }
 
 // Videos
-func (q *Queries) GetVideosForHome(ctx context.Context, arg GetVideosForHomeParams) ([]GetVideosForHomeRow, error) {
+func (q *Queries) GetAllVideo(ctx context.Context, arg GetVideosForHomeParams) ([]GetVideosForHomeRow, error) {
 	rows, err := q.db.Query(ctx, getVideosForHome, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
